@@ -132,13 +132,19 @@ func (cm *CronMatcher) Match(r *http.Request) bool {
 		// This allows 'now' to be considered the most recent tick when evaluating time windows.
 		lastEnable, err := gronx.PrevTickBefore(cm.EnableAt[i], now, true)
 		if err != nil {
-			cm.logger.Error("Failed to compute last enable time", zap.String("EnableAt", cm.EnableAt[i]), zap.Error(err))
+			cm.logger.Error("Failed to compute last enable time",
+				zap.String("EnableAt", cm.EnableAt[i]),
+				zap.Time("now", now),
+				zap.Error(err))
 			continue
 		}
 
 		nextDisable, err := gronx.NextTickAfter(cm.DisableAt[i], lastEnable, false)
 		if err != nil {
-			cm.logger.Error("Failed to compute next disable time", zap.String("DisableAt", cm.DisableAt[i]), zap.Error(err))
+			cm.logger.Error("Failed to compute next disable time",
+				zap.String("DisableAt", cm.DisableAt[i]),
+				zap.Time("lastEnable", lastEnable),
+				zap.Error(err))
 			continue
 		}
 
