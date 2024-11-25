@@ -163,7 +163,7 @@ For a complete overview of these features, refer to the [Gronx README](https://g
 These features enable precise and complex scheduling, such as Oracle's **Critical Patch Updates** that occur on the **third Tuesday of January, April, July, and October**. Below is an example demonstrating how to configure this in Caddy:
 
 ```caddyfile
-@criticalPatchTuesday cron "0 0 * 1,4,7,10 2#3" "0 23 * 1,4,7,10 2#3"
+@criticalPatchTuesday cron "0 0 * 1,4,7,10 2#3" "30 23 * 1,4,7,10 2#3"
 
 handle @criticalPatchTuesday {
     respond "Oracle Critical Patch Update in progress: Third Tuesday of January, April, July, and October."
@@ -181,8 +181,8 @@ Step-by-Step Breakdown of the Example:
    - **`2#3`**: Matches the **third Tuesday** (weekday `2` for Tuesday and `#3` for the third occurrence of that day in the month).
    - The day field (`*`) is ignored because the `2#3` modifier already specifies the exact match.
 
-2. **`"0 23 * 1,4,7,10 2#3"`**:
-   - Ends the match at 23:59 on the same day.
+2. **`"30 23 * 1,4,7,10 2#3"`**:
+   - Ends the match at 23:30 on the same day.
 
 ## License
 
