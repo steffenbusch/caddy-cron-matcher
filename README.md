@@ -139,6 +139,25 @@ In this example, a promotional message is displayed during business hours from 0
 └───────── Minute (0-59)
 ```
 
+#### Advanced Cron Expressions
+
+While the commonly used 5-segment cron format (`<minute> <hour> <day> <month> <weekday>`) is supported, the underlying library ([Gronx](https://github.com/adhocore/gronx)) provides extended functionality with a 6-segment style that includes `<year>`. This format allows for more precise scheduling:
+
+- A complete cron expression consists of 7 segments: `<second> <minute> <hour> <day> <month> <weekday> <year>`.
+- For a 6-segment expression, if the 6th segment matches `<year>` (e.g., at least 4 digits), it is interpreted as `<minute> <hour> <day> <month> <weekday> <year>`. A default value of `0` is used for `<second>`.
+
+Additionally, Gronx supports advanced modifiers for the `<day>` and `<weekday>` segments:
+
+- **`L` (Last)**:
+  - In the `<day>` segment, `L` represents the last day of the month (e.g., `L` could mean February 29th in a leap year).
+  - In the `<weekday>` segment, `L` refers to the last occurrence of a specific weekday in a month (e.g., `2L` means the last Tuesday of the month).
+- **`W` (Weekday)**:
+  - For `<day>`, `W` specifies the closest weekday (Monday to Friday) to a given day (e.g., `10W` means the closest weekday to the 10th of the month).
+- **`#` (Nth weekday)**:
+  - In the `<weekday>` segment, `#` denotes the nth occurrence of a specific day in a month (e.g., `1#2` means the second Monday of the month).
+
+For a complete overview of these features, refer to the [Gronx README](https://github.com/adhocore/gronx#readme).
+
 ## License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
