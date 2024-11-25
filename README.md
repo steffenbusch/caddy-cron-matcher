@@ -139,6 +139,51 @@ In this example, a promotional message is displayed during business hours from 0
 └───────── Minute (0-59)
 ```
 
+#### Advanced Cron Expressions
+
+While the commonly used 5-segment cron format (`<minute> <hour> <day> <month> <weekday>`) is supported, the underlying library ([Gronx](https://github.com/adhocore/gronx)) provides extended functionality with a 6-segment style that includes `<year>`. This format allows for more precise scheduling:
+
+- A complete cron expression consists of 7 segments: `<second> <minute> <hour> <day> <month> <weekday> <year>`.
+- For a 6-segment expression, if the 6th segment matches `<year>` (e.g., at least 4 digits), it is interpreted as `<minute> <hour> <day> <month> <weekday> <year>`. A default value of `0` is used for `<second>`.
+
+Additionally, Gronx supports advanced modifiers for the `<day>` and `<weekday>` segments:
+
+- **`L` (Last)**:
+  - In the `<day>` segment, `L` represents the last day of the month (e.g., `L` could mean February 29th in a leap year).
+  - In the `<weekday>` segment, `L` refers to the last occurrence of a specific weekday in a month (e.g., `2L` means the last Tuesday of the month).
+- **`W` (Weekday)**:
+  - For `<day>`, `W` specifies the closest weekday (Monday to Friday) to a given day (e.g., `10W` means the closest weekday to the 10th of the month).
+- **`#` (Nth weekday)**:
+  - In the `<weekday>` segment, `#` denotes the nth occurrence of a specific day in a month (e.g., `1#2` means the second Monday of the month).
+
+For a complete overview of these features, refer to the [Gronx README](https://github.com/adhocore/gronx#readme).
+
+#### Advanced Cron Expressions in Action
+
+These features enable precise and complex scheduling, such as Oracle's **Critical Patch Updates** that occur on the **third Tuesday of January, April, July, and October**. Below is an example demonstrating how to configure this in Caddy:
+
+```caddyfile
+@criticalPatchTuesday cron "0 0 * 1,4,7,10 2#3" "30 23 * 1,4,7,10 2#3"
+
+handle @criticalPatchTuesday {
+    respond "Oracle Critical Patch Update in progress: Third Tuesday of January, April, July, and October."
+}
+
+handle {
+    reverse_proxy localhost:8080
+}
+```
+
+Step-by-Step Breakdown of the Example:
+
+1. **`"0 0 * 1,4,7,10 2#3"`**:
+   - **`1,4,7,10`**: Matches the months **January, April, July, and October**.
+   - **`2#3`**: Matches the **third Tuesday** (weekday `2` for Tuesday and `#3` for the third occurrence of that day in the month).
+   - The day field (`*`) is ignored because the `2#3` modifier already specifies the exact match.
+
+2. **`"30 23 * 1,4,7,10 2#3"`**:
+   - Ends the match at 23:30 on the same day.
+
 ## License
 
 This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
