@@ -7,7 +7,7 @@ toolchain go1.24.1
 require (
 	github.com/adhocore/gronx v1.19.6
 	github.com/caddyserver/caddy/v2 v2.9.1
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 )
 
 require (
