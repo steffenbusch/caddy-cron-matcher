@@ -3,5 +3,7 @@ updates:
   # Update Go dependencies
   - package-ecosystem: "gomod"
     directory: "/"
+    allow:
+      - dependency-type: "direct"
     schedule:
       interval: "weekly"
