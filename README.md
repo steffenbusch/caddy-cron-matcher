@@ -126,7 +126,7 @@ In this example, a promotional message is displayed during business hours from 0
 
 ### Notes
 
-- **Time Zone Considerations**: Cron expressions are evaluated based on the server's local time zone. Ensure that your server's time zone is configured correctly to match your intended schedule.
+- **Time Zone Considerations**: Cron expressions are evaluated based on the server's local time zone. Ensure that your server's time zone is configured correctly to match your intended schedule. During the spring daylight saving time transition, local times that do not exist (for example, `02:30` in `Europe/Berlin`) are skipped. A schedule set to such a time will next run at its following valid occurrence, which can extend a matching window by a week. During the autumn daylight saving time transition, times between `02:00` and `02:59` occur twice. The underlying scheduler selects the second occurrence, after the clock has moved back. Avoid these times for critical start or end boundaries.
 - **Cron Expression Format**: The cron expressions follow the standard format:
 
 ```text

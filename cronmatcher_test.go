@@ -103,3 +103,111 @@ func TestCronMatcher_Match(t *testing.T) {
 	// Restore the original time function after the tests
 	defer func() { nowFunc = time.Now }()
 }
+
+func TestCronMatcher_MatchAcrossBerlinDST(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Berlin")
+	if err != nil {
+		t.Fatalf("load Europe/Berlin location: %v", err)
+	}
+
+	for _, test := range []struct {
+		name        string
+		enableAt    string
+		disableAt   string
+		now         time.Time
+		expectMatch bool
+	}{
+		{
+			// Maintenance starts on Friday, 27 March 2026, at 22:00 CET.
+			// DST starts on Sunday, 29 March: 02:00 jumps to 03:00.
+			// Maintenance ends on Monday, 30 March, at 05:00 CEST.
+			// It must therefore be active on Sunday, 29 March, at noon.
+			name:        "summer time: Sunday 29 March 2026 at 12:00 CEST is active",
+			enableAt:    "0 22 * * 5",
+			disableAt:   "0 5 * * 1",
+			now:         time.Date(2026, time.March, 29, 12, 0, 0, 0, location),
+			expectMatch: true,
+		},
+		{
+			// The same window ends exactly at Monday, 30 March 2026, 05:00 CEST.
+			// disableAt is an exclusive boundary, so the matcher must be inactive.
+			name:        "summer time: Monday 30 March 2026 at 05:00 CEST is inactive",
+			enableAt:    "0 22 * * 5",
+			disableAt:   "0 5 * * 1",
+			now:         time.Date(2026, time.March, 30, 5, 0, 0, 0, location),
+			expectMatch: false,
+		},
+		{
+			// Maintenance starts on Friday, 23 October 2026, at 22:00 CEST.
+			// DST ends on Sunday, 25 October: 03:00 returns to 02:00.
+			// Maintenance ends on Monday, 26 October, at 05:00 CET.
+			// It must therefore be active on Sunday, 25 October, at noon.
+			name:        "winter time: Sunday 25 October 2026 at 12:00 CET is active",
+			enableAt:    "0 22 * * 5",
+			disableAt:   "0 5 * * 1",
+			now:         time.Date(2026, time.October, 25, 12, 0, 0, 0, location),
+			expectMatch: true,
+		},
+		{
+			// The same window ends exactly at Monday, 26 October 2026, 05:00 CET.
+			// disableAt is an exclusive boundary, so the matcher must be inactive.
+			name:        "winter time: Monday 26 October 2026 at 05:00 CET is inactive",
+			enableAt:    "0 22 * * 5",
+			disableAt:   "0 5 * * 1",
+			now:         time.Date(2026, time.October, 26, 5, 0, 0, 0, location),
+			expectMatch: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			// enableAt is every Friday at 22:00; disableAt is every Monday at 05:00.
+			cm := &CronMatcher{
+				EnableAt:  []string{test.enableAt},
+				DisableAt: []string{test.disableAt},
+				logger:    zap.NewNop(),
+			}
+
+			previousNowFunc := nowFunc
+			nowFunc = func() time.Time { return test.now }
+			t.Cleanup(func() { nowFunc = previousNowFunc })
+
+			r, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+			if err != nil {
+				t.Fatalf("create request: %v", err)
+			}
+			if got := cm.Match(r); got != test.expectMatch {
+				t.Fatalf("Match() = %t, want %t", got, test.expectMatch)
+			}
+		})
+	}
+}
+
+func TestCronMatcher_MatchAcrossBerlinDSTRegression(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Berlin")
+	if err != nil {
+		t.Fatalf("load Europe/Berlin location: %v", err)
+	}
+
+	// The last enable tick is Saturday, 28 March 2026, 02:00 CET.
+	// The next disable tick must be Saturday, 4 April 2026, 02:00 CEST.
+	// gronx v1.20.3 incorrectly returned Sunday, 29 March, after the DST jump.
+	cm := &CronMatcher{
+		EnableAt:  []string{"0 2 * 3 6"}, // Every Saturday in March at 02:00.
+		DisableAt: []string{"0 2 * * 6"}, // Every Saturday at 02:00.
+		logger:    zap.NewNop(),
+	}
+
+	// Monday, 30 March 2026, 12:00 CEST is after the DST change and before
+	// the expected disable tick on Saturday, 4 April.
+	now := time.Date(2026, time.March, 30, 12, 0, 0, 0, location)
+	previousNowFunc := nowFunc
+	nowFunc = func() time.Time { return now }
+	t.Cleanup(func() { nowFunc = previousNowFunc })
+
+	r, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	if err != nil {
+		t.Fatalf("create request: %v", err)
+	}
+	if !cm.Match(r) {
+		t.Fatal("expected matcher to remain active until Saturday, 4 April 2026, 02:00 CEST")
+	}
+}
